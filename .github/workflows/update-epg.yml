@@ -1,0 +1,29 @@
+name: Update JP EPG
+
+on:
+  schedule:
+    - cron: "30 7,19 * * *"   # 07:30 & 19:30 UTC = 16:30 & 04:30 JST (元ソースの更新の少し後)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python merge_epg.py
+      - name: Publish to dist branch (GitHub Pages)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          touch .nojekyll
+          git checkout --orphan dist
+          git reset
+          git add -f merged_guide.xml .nojekyll
+          git commit -m "EPG update $(date -u +%FT%TZ)"
+          git push -f origin dist
